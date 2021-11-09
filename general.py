@@ -36,4 +36,4 @@ def setup(bot):
 
     @bot.event
     async def on_disconnect():
-        logging.debug(f'{bot.user.name} - Disconnected!')
+        logging.info(f'{bot.user.name} - Disconnected!')
