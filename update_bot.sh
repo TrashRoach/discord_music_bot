@@ -4,5 +4,7 @@ git clean -fd
 git pull
 
 venv/bin/pip install -r requirements.txt
-screen -S music_bot -X quit
+if screen -list | grep -q "music_bot"; then
+  screen -S music_bot -X quit
+fi
 screen -S music_bot venv/bin/python3 run.py
