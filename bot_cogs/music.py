@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 import discord
@@ -46,6 +47,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
         self.requester = requester
         self.title = data.get('title')
         self.web_url = data.get('webpage_url')
+        self.duration = data.get('duration')
+        self.thumbnail = data.get('thumbnail')
         # https://github.com/rg3/youtube-dl/blob/master/README.md
 
     def __getitem__(self, item: str):
@@ -63,7 +66,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
             return {
                 'webpage_url': data['webpage_url'],
                 'requester': ctx.author,
-                'title': data['title']
+                'title': data['title'],
+                'duration': data['duration']
             }
         return cls(discord.FFmpegPCMAudio(source), data=data, requester=ctx.author)
 
@@ -83,6 +87,21 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
         return cls(discord.FFmpegPCMAudio(data['url']), data=data, requester=requester)
 
+    def create_embed(self, time_started: datetime.datetime = None):
+        embed = discord.Embed(title='Now playing',
+                              description=f'[{self.title}]({self.web_url})')
+        duration = str(datetime.timedelta(seconds=self.duration))
+        duration_field_name = 'Song Duration'
+        if time_started:
+            elapsed = datetime.datetime.now() - time_started
+            elapsed = str(elapsed - datetime.timedelta(microseconds=elapsed.microseconds))
+            duration = f'{elapsed} / {duration}'
+            duration_field_name = 'Song Progress'
+        embed.add_field(name=duration_field_name, value=duration)
+        embed.add_field(name='Requested by', value=self.requester.mention)
+        embed.set_thumbnail(url=self.thumbnail)
+        return embed
+
 
 class MusicPlayer:
     """
@@ -94,7 +113,7 @@ class MusicPlayer:
     """
 
     __slots__ = (
-        'bot', '_guild', '_channel', '_cog', 'queue', 'next', 'current', 'np', 'volume'
+        'bot', '_guild', '_channel', '_cog', 'queue', 'next', 'current', 'np', 'started_on', 'volume'
     )
 
     def __init__(self, ctx):
@@ -107,6 +126,7 @@ class MusicPlayer:
         self.next = asyncio.Event()
 
         self.np = None
+        self.started_on = None
         self.volume = .5
         self.current = None
 
@@ -142,8 +162,10 @@ class MusicPlayer:
             self.current = source
 
             self._guild.voice_client.play(source, after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set))
-            self.np = await self._channel.send(f'**Now Playing:** ▶️ `{source.title}` '
-                                               f'requested by `{source.requester}`')
+
+            # ToDo handle paused player
+            # self.started_on = datetime.datetime.now()
+            self.np = await self._channel.send(embed=source.create_embed())
             await self.next.wait()
 
             # Cleanup FFmpeg process
@@ -222,7 +244,7 @@ class Music(commands.Cog):
         return player
 
     @commands.command(name='connect', aliases=['join'])
-    async def connect_(self, ctx, *, channel: discord.VoiceChannel = None):
+    async def _connect(self, ctx, *, channel: discord.VoiceChannel = None):
         """Connect to Voice Channel.
 
         Parameters
@@ -257,7 +279,7 @@ class Music(commands.Cog):
         await ctx.send(f'Connected to <#{channel.id}>', delete_after=20)
 
     @commands.command(name='play', aliases=['p'])
-    async def play_(self, ctx, *, search: str):
+    async def _play(self, ctx, *, search: str):
         """Request a song and add it it the queue.
 
         This command attempts to join a valid Voice Channel if the bot is not already in one.
@@ -272,7 +294,7 @@ class Music(commands.Cog):
         vc = ctx.voice_client
 
         if not vc:
-            await ctx.invoke(self.connect_)
+            await ctx.invoke(self._connect)
 
         player = self.get_player(ctx)
 
@@ -301,7 +323,7 @@ class Music(commands.Cog):
         await ctx.send(f'{composed_msg} to the Queue.', delete_after=15)
 
     @commands.command(name='pause')
-    async def pause_(self, ctx):
+    async def _pause(self, ctx):
         """Pause the currently playing song."""
         vc = ctx.voice_client
 
@@ -314,7 +336,7 @@ class Music(commands.Cog):
         await ctx.send(f'**`{ctx.author}`**: Paused the song.')
 
     @commands.command(name='resume')
-    async def resume_(self, ctx):
+    async def _resume(self, ctx):
         """Resume the currently paused song."""
         vc = ctx.voice_client
 
@@ -327,7 +349,7 @@ class Music(commands.Cog):
         await ctx.send(f'**`{ctx.author}`**: Resumed the song.')
 
     @commands.command(name='skip')
-    async def skip_(self, ctx):
+    async def _skip(self, ctx):
         """Skip the song."""
         vc = ctx.voice_client
 
@@ -366,7 +388,7 @@ class Music(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name='np', aliases=['now_playing', 'current', 'currentsong', 'playing'])
-    async def now_playing_(self, ctx):
+    async def _now_playing(self, ctx):
         """Display information about the currently playing song."""
         vc = ctx.voice_client
 
@@ -383,8 +405,8 @@ class Music(commands.Cog):
         except discord.HTTPException:
             pass
 
-        player.np = await ctx.send(f'**Now Playing:** ▶️ `{vc.source.title}` '
-                                   f'requested by `{vc.source.requester}`')
+        # player.np = await ctx.send(embed=vc.source.create_embed(player.started_on))
+        player.np = await ctx.send(embed=vc.source.create_embed())
 
     @commands.command(name='volume', aliases=['vol'], hidden=True)
     async def change_volume(self, ctx, *, volume: float):
@@ -412,7 +434,7 @@ class Music(commands.Cog):
         await ctx.send(f'**`{ctx.author}`**: Set the volume to **{volume}%**')
 
     @commands.command(name='stop')
-    async def stop_(self, ctx):
+    async def _stop(self, ctx):
         """Stop the currently playing song and destroy the player.
 
         !Warning!
