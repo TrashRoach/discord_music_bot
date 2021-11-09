@@ -26,7 +26,7 @@ jobs:
           host: ${{ secrets.SSH_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          password: ${{ secrets.SSH_PRIVATE_KEY_PWD }}
+          passphrase: ${{ secrets.SSH_PRIVATE_KEY_PWD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ${{ secrets.SSH_PRODUCTION_FOLDER }}
