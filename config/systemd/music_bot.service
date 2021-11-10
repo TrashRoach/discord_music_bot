@@ -3,13 +3,13 @@ Description=discord music bot
 
 [Service]
 User=discord_music_bot
-Restart=always
+#Restart=always
 RestartSec=5
 Nice=1
 SuccessExitStatus=0 1
 WorkingDirectory=/home/discord_music_bot/discord_music_bot
 ExecStart=/home/discord_music_bot/discord_music_bot/venv/bin/python3 /home/discord_music_bot/discord_music_bot/run.py
-KillSignal=SIGINT
+#KillSignal=SIGINT
 
 [Install]
 WantedBy=multi-user.target
