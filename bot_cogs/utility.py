@@ -9,14 +9,14 @@ class Utility(commands.Cog, command_attrs=dict(hidden=True)):
 
     @commands.command(name='off', aliases=['disconnect', 'logout', 'dc'])
     @commands.is_owner()
-    async def off_(self, ctx):
+    async def _off(self, ctx):
         """Disconnect the bot."""
         await ctx.send(f'Goodbye.')
         await self.bot.change_presence(status=discord.Status.invisible)
         await self.bot.close()
 
-    @commands.command(name='owner',aliases=['owners', 'ownership'])
-    async def owner_(self, ctx):
+    @commands.command(name='owner', aliases=['owners', 'ownership'])
+    async def _owner(self, ctx):
         """Bot's owner(s), if any."""
         composed_msg = f'@<{self.bot.owner_id}>\n' if self.bot.owner_id else ''
         owner_ids = self.bot.owner_ids
@@ -25,6 +25,10 @@ class Utility(commands.Cog, command_attrs=dict(hidden=True)):
         if not composed_msg:
             composed_msg = 'I have no master it seems.'
         await ctx.send(composed_msg)
+
+    @commands.command(name='ping')
+    async def _ping(self, ctx):
+        await ctx.send('pong')
 
 
 def setup(bot):
