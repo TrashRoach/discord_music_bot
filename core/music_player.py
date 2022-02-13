@@ -86,7 +86,7 @@ class MusicPlayer(object):
             await self.np_message.delete()
         except discord.HTTPException:
             pass
-        for track in list(self.playlist.play_queue)[1:6]:
+        for track in list(self.playlist.play_queue)[1:3]:
             asyncio.ensure_future(self.preload(track))
 
     def next_track(self, error):
