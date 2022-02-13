@@ -26,6 +26,9 @@ class Playlist:
         if len(self.play_queue) == 0:
             return None
 
+        if len(self.play_history) > 15:
+            self.play_history.popleft()
+
         return self.play_queue[0]
 
     def delete(self, pos):
@@ -49,23 +52,15 @@ class Playlist:
 
     def clear(self):
         self.play_queue.clear()
-        # self.play_history.clear()
+        self.play_history.clear()
 
-    def create_embed(self, title: str, page_num: int) -> discord.Embed or None:
-        songs_per_page = 10
+    def create_embed(self, title: str, page_num: int = 0) -> discord.Embed or None:
+        songs_per_page = 15
 
         if title == 'Recently played':
             playlist = self.play_history
             playlist_len = len(playlist)
-            pages_max = playlist_len // songs_per_page + (playlist_len % songs_per_page > 0)
-
-            # Prioritize the last page
-            if page_num is None or page_num >= pages_max:
-                page_num = pages_max - 1
-            elif page_num <= 0:
-                page_num = 0
-            else:
-                page_num = page_num - 1
+            pages_max = 1
         else:
             playlist = self.play_queue
             playlist_len = len(playlist)
@@ -82,9 +77,9 @@ class Playlist:
         if playlist_len == 0:
             return None
 
-        queue = list(itertools.islice(playlist, page_num * 10, 10 + page_num * 10))
+        queue = list(itertools.islice(playlist, page_num * songs_per_page, songs_per_page + page_num * songs_per_page))
 
-        fmt = '\n'.join(f'{i}.  {track}' for i, track in enumerate(queue, start=page_num * 10 + 1))
+        fmt = '\n'.join(f'{i}.  {track}' for i, track in enumerate(queue, start=page_num * songs_per_page + 1))
         if pages_max > 1:
             title += f' page {page_num + 1}/{pages_max}'
         return discord.Embed(title=title, description=fmt)

@@ -226,17 +226,11 @@ class Music(commands.Cog):
         player.np_message = await ctx.send(embed=player.current_track.create_embed())
 
     @commands.command(name='history', aliases=['h'])
-    async def _history(self, ctx: commands.Context, *, page_num: int = None):
-        """Retrieve a basic list of recently played songs.
-
-        Parameters
-        -----------
-        page_num: int [Optional]
-            History page number to display.
-        """
+    async def _history(self, ctx: commands.Context):
+        """Retrieve a basic list of recently played songs."""
         player = guild_to_audioplayer[ctx.guild]
 
-        embed = player.playlist.create_embed(title='Recently played', page_num=page_num)
+        embed = player.playlist.create_embed(title='Recently played')
 
         if embed is None:
             return await ctx.send('History is empty.')
@@ -244,7 +238,7 @@ class Music(commands.Cog):
 
     @commands.command(name='delete', aliases=['remove', 'del'])
     async def _delete(self, ctx: commands.Context, *, position: int):
-        """Remove song by index from queue.
+        """Remove song by index from the queue.
 
         Parameters
         -----------
