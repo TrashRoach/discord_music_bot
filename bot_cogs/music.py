@@ -59,7 +59,7 @@ class Music(commands.Cog):
         Parameters
         -----------
         search: str [Required]
-            The song to search and retrieve using YTDL. This could be a simple search, an ID or URL.
+            The song to search and retrieve using YTDL. This could be a simple search or URL.
         """
         await ctx.trigger_typing()
 
@@ -84,6 +84,7 @@ class Music(commands.Cog):
         player.playlist.loop = not player.playlist.loop
         await ctx.send(f'**`{ctx.author}`**: Loop {"enabled  :repeat:" if player.playlist.loop else "disabled  :x:"}')
 
+    @commands.cooldown(1, 60)
     @commands.command(name='shuffle')
     async def _shuffle(self, ctx):
         """Shuffle the playlist."""
@@ -132,6 +133,7 @@ class Music(commands.Cog):
         await player.stop_player()
         await ctx.send(f'**`{ctx.author}`**: Stopped the player.')
 
+    @commands.cooldown(1, 5)
     @commands.command(name='skip', aliases=['next'])
     async def _skip(self, ctx: commands.Context):
         """Skip the song.
