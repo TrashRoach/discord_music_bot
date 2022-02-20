@@ -1,18 +1,19 @@
 import asyncio
 import concurrent.futures
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 import discord
 import yt_dlp
 from discord.ext import commands
 
+from config import MAX_SONG_DURATION, MAX_PRELOAD, MAX_PLAYLIST_LEN
 from core import utils
 from core.playlist import Playlist
 from core.track import Track
 
 
 class MusicPlayer(object):
-    __slots__ = ('bot', 'playlist', 'current_track', 'next', 'np_message', 'guild', 'channel', '_volume', 'timer')
+    __slots__ = ('bot', 'playlist', 'current_track', 'next', 'np_message', 'guild', 'channel', 'timer')
 
     def __init__(self, bot, guild):
         self.bot = bot
@@ -22,7 +23,6 @@ class MusicPlayer(object):
         self.np_message = None
         self.guild = guild
         self.channel = None
-        self._volume = 0.5
         self.timer = utils.Timer(self.timeout_handler)
 
     async def timeout_handler(self):
@@ -40,18 +40,6 @@ class MusicPlayer(object):
         await self.stop_player()
         await self.guild.voice_client.disconnect(force=True)
 
-    @property
-    def volume(self):
-        return self._volume
-
-    @volume.setter
-    def volume(self, value):
-        self._volume = value
-        try:
-            self.guild.voice_client.source.volume = float(value) / 100.0
-        except Exception as e:
-            pass
-
     async def play_track(self, track):
 
         if not self.playlist.loop:
@@ -61,13 +49,13 @@ class MusicPlayer(object):
         self.next.clear()
         if track.info.duration is None:
             ytdl = yt_dlp.YoutubeDL({'format': 'bestaudio/best', 'title': True})
-            r = ytdl.extract_info(track.info.webpage_url, download=False)
-            track.url = r.get('url')
-            track.info.uploader = r.get('uploader')
-            track.info.title = r.get('title')
-            track.info.duration = r.get('duration')
-            track.info.webpage_url = r.get('webpage_url')
-            track.info.thumbnail = r.get('thumbnails')[0]['url']
+            info = ytdl.extract_info(track.info.webpage_url, download=False)
+            track.url = info.get('url')
+            track.info.uploader = info.get('uploader')
+            track.info.title = info.get('title')
+            track.info.duration = info.get('duration')
+            track.info.webpage_url = info.get('webpage_url')
+            track.info.thumbnail = info.get('thumbnails')[0]['url']
 
         self.current_track = track
 
@@ -86,7 +74,7 @@ class MusicPlayer(object):
             await self.np_message.delete()
         except discord.HTTPException:
             pass
-        for track in list(self.playlist.play_queue)[1:3]:
+        for track in list(self.playlist.play_queue)[1:MAX_PRELOAD + 1]:
             asyncio.ensure_future(self.preload(track))
 
     def next_track(self, error):
@@ -115,27 +103,45 @@ class MusicPlayer(object):
         else:
             self.guild.voice_client.stop()
 
-    async def process_playlist(self, ctx: commands.Context, search):
+    async def process_playlist(self, ctx: commands.Context, search, start_pos: int = 0):
         composed_msg = f'Added '
-        with yt_dlp.YoutubeDL({'format': 'bestaudio/best', 'extract_flat': True}) as ytdl:
-            r = ytdl.extract_info(search, download=False)
-            entries = r.get('entries')
-            # ToDo: hardcoded max_playlist_len
-            max_playlist_len = 25
-            if len(entries) > max_playlist_len:
-                await ctx.send(f'Too much songs in requested playlist. Maximum is {max_playlist_len}.')
-                entries = entries[:25]
-            for entry in entries:
-                track_obj = Track(
-                    requester=ctx.author,
-                    title=entry.get('title'),
-                    webpage_url=entry.get('url')
-                )
-                self.playlist.add(track_obj)
-                composed_msg += f'\n`{track_obj.info.title}`'
+        excluded = []
+        with yt_dlp.YoutubeDL(
+                {
+                    'format': 'bestaudio/best',
+                    'extract_flat': True,
+                    'playliststart': start_pos,
+                    'playlistend': start_pos + MAX_PLAYLIST_LEN + 1
+                }
+        ) as ytdl:
+            info = ytdl.extract_info(search, download=False)
+        entries = info.get('entries')
+        for entry in entries:
+            if entry.get('duration') > MAX_SONG_DURATION:
+                excluded.append(entry.get('title'))
+                continue
+            track_obj = Track(
+                requester=ctx.author,
+                title=entry.get('title'),
+                webpage_url=entry.get('url')
+            )
+            self.playlist.add(track_obj)
+            composed_msg += f'\n`{track_obj.info.title}`'
 
-        await ctx.send(f'{composed_msg} to the Queue.', delete_after=15)
-        for track in list(self.playlist.play_queue)[1:6]:
+        composed_msg = f'{composed_msg} to the Queue.\n\n'
+        if excluded:
+            composed_msg += 'Excluded (song is too long) '
+            composed_msg += '\n'.join(f'`{track}`' for track in excluded)
+
+        if len(composed_msg) > 2000:
+            part_1 = composed_msg[:2000]
+            slice_index = part_1.rfind('\n')
+            part_1 = part_1[:slice_index]
+            composed_msg = '...' + composed_msg[slice_index:]
+            await ctx.send(part_1, delete_after=15)
+
+        await ctx.send(composed_msg, delete_after=15)
+        for track in list(self.playlist.play_queue)[1:MAX_PRELOAD + 1]:
             asyncio.ensure_future(self.preload(track))
 
     async def preload(self, track_obj):
@@ -148,13 +154,13 @@ class MusicPlayer(object):
                 return None
 
             ytdl = yt_dlp.YoutubeDL({'format': 'bestaudio/best', 'title': True})
-            r = ytdl.extract_info(track.info.webpage_url, download=False)
-            track.url = r.get('url')
-            track.info.uploader = r.get('uploader')
-            track.info.title = r.get('title')
-            track.info.duration = r.get('duration')
-            track.info.webpage_url = r.get('webpage_url')
-            track.info.thumbnail = r.get('thumbnails')[0]['url']
+            info = ytdl.extract_info(track.info.webpage_url, download=False)
+            track.url = info.get('url')
+            track.info.uploader = info.get('uploader')
+            track.info.title = info.get('title')
+            track.info.duration = info.get('duration')
+            track.info.webpage_url = info.get('webpage_url')
+            track.info.thumbnail = info.get('thumbnails')[0]['url']
 
         loop = asyncio.get_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
@@ -162,25 +168,34 @@ class MusicPlayer(object):
 
     def search_youtube(self, search: str):
         with yt_dlp.YoutubeDL({'format': 'bestaudio/best', 'default_search': 'auto', 'noplaylist': True}) as ytdl:
-            r = ytdl.extract_info(search, download=False)
+            info = ytdl.extract_info(search, download=False)
 
-        if r is None:
+        if info is None:
             return None
 
-        return r['entries'][0]
+        return info['entries'][0]
 
     async def process_track(self, ctx: commands.Context, search: str):
-
+        await ctx.trigger_typing()
         result = urlparse(search)
+        if result.path == '/playlist' or 'list=' in result.query:
+            link_params = parse_qs(search)
+            start_pos = link_params.get('index', 0)
+            if start_pos:
+                start_pos = int(start_pos[0])
 
-        if result.path == '/playlist':
-            await self.process_playlist(ctx, search)
+            # Default link params start with 'watch',
+            # which makes yt-dlp think that its not a playlist for some reason
+            list_id = link_params.get('list')[0]
+            search = f'https://www.youtube.com/playlist?list={list_id}'
+
+            await self.process_playlist(ctx, search, start_pos)
             if self.current_track is None:
                 await self.play_track(self.playlist.play_queue[0])
                 return
         if not result.scheme:
-            r = self.search_youtube(search)
-            if r is None:
+            info = self.search_youtube(search)
+            if info is None:
                 await ctx.channel.send('Could not find anything on YouTube. Sorry.')
                 return
         else:
@@ -188,27 +203,29 @@ class MusicPlayer(object):
                 ytdl = yt_dlp.YoutubeDL({'format': 'bestaudio/best', 'title': True})
 
                 try:
-                    r = ytdl.extract_info(search, download=False)
+                    info = ytdl.extract_info(search, download=False)
                 except Exception as ex:
                     await self.channel.send(f'There was an error processing your request.\n'
                                             f'```css\n{ex}\n```')
                     return None
             except Exception as ex:
                 ytdl = yt_dlp.YoutubeDL({'title': True})
-                r = ytdl.extract_info(search, download=False)
+                info = ytdl.extract_info(search, download=False)
 
-        if r.get('thumbnails') is not None:
-            thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url']
+        if info.get('thumbnails') is not None:
+            thumbnail = info.get('thumbnails')[len(info.get('thumbnails')) - 1]['url']
         else:
             thumbnail = None
-
+        if info.get('duration') > MAX_SONG_DURATION:
+            await ctx.send(f'Sorry, `{info.get("title")}` is too long.')
+            return
         track_obj = Track(
-            url=r.get('url'),
+            url=info.get('url'),
             requester=ctx.author,
-            uploader=r.get('uploader'),
-            title=r.get('title'),
-            duration=r.get('duration'),
-            webpage_url=r.get('webpage_url'),
+            uploader=info.get('uploader'),
+            title=info.get('title'),
+            duration=info.get('duration'),
+            webpage_url=info.get('webpage_url'),
             thumbnail=thumbnail
         )
 

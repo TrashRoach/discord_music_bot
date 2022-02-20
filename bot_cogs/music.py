@@ -48,7 +48,7 @@ class Music(commands.Cog):
             except asyncio.TimeoutError:
                 await ctx.send(f'Connecting to channel: <#{channel.id}> timed out.')
 
-        await ctx.send(f'Connected to <#{channel.id}>', delete_after=20)
+        await ctx.send(f'Connected to <#{channel.id}>', delete_after=10)
 
     @commands.command(name='play', aliases=['p'])
     async def _play(self, ctx: commands.Context, *, search: str):

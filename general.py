@@ -5,13 +5,13 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
+from config import BOT_CMD_PREFIX
 from core.music_player import MusicPlayer
 from core.settings import Settings
 
 BASE_DIR = Path(__file__).resolve().parent
 COG_FOLDER = "bot_cogs"
 COG_LIST = [cog[:-3] for cog in os.listdir(BASE_DIR.joinpath(COG_FOLDER)) if not cog.startswith('_')]
-
 
 guild_to_audioplayer = {}
 guild_to_settings = {}
@@ -25,7 +25,7 @@ logging.basicConfig(
 def setup(bot):
     @bot.event
     async def on_ready():
-        await bot.change_presence(activity=discord.Game(name=f'{bot.command_prefix}play'))
+        await bot.change_presence(activity=discord.Game(name=f'{BOT_CMD_PREFIX}play'))
         for cog in COG_LIST:
             try:
                 bot.load_extension(f'{COG_FOLDER}.{cog}')

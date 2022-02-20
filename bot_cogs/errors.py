@@ -3,7 +3,8 @@ from discord.ext import commands
 
 
 class Errors(commands.Cog):
-    """Error handling cog"""
+    """Error handling"""
+
     __slots__ = ('bot',)
 
     def __init__(self, bot):
