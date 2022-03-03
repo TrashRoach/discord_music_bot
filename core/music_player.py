@@ -104,7 +104,7 @@ class MusicPlayer(object):
             self.guild.voice_client.stop()
 
     async def process_playlist(self, ctx: commands.Context, search, start_pos: int = 0):
-        composed_msg = f'Added '
+        composed_msg = f'**Added**\n'
         excluded = []
         with yt_dlp.YoutubeDL(
                 {
@@ -117,8 +117,9 @@ class MusicPlayer(object):
             info = ytdl.extract_info(search, download=False)
         entries = info.get('entries')
         for entry in entries:
-            if entry.get('duration') > MAX_SONG_DURATION:
-                excluded.append(entry.get('title'))
+            track_duration = entry.get('duration')
+            if track_duration is None or track_duration > MAX_SONG_DURATION:
+                excluded.append(entry.get('title') if track_duration else entry.get('url'))
                 continue
             track_obj = Track(
                 requester=ctx.author,
@@ -130,7 +131,7 @@ class MusicPlayer(object):
 
         composed_msg = f'{composed_msg} to the Queue.\n\n'
         if excluded:
-            composed_msg += 'Excluded (song is too long) '
+            composed_msg += '\n**Excluded (song is private or too long)**\n'
             composed_msg += '\n'.join(f'`{track}`' for track in excluded)
 
         if len(composed_msg) > 2000:
@@ -138,9 +139,9 @@ class MusicPlayer(object):
             slice_index = part_1.rfind('\n')
             part_1 = part_1[:slice_index]
             composed_msg = '...' + composed_msg[slice_index:]
-            await ctx.send(part_1, delete_after=15)
+            await ctx.send(part_1, delete_after=25)
 
-        await ctx.send(composed_msg, delete_after=15)
+        await ctx.send(composed_msg, delete_after=25)
         for track in list(self.playlist.play_queue)[1:MAX_PRELOAD + 1]:
             asyncio.ensure_future(self.preload(track))
 
@@ -178,6 +179,9 @@ class MusicPlayer(object):
     async def process_track(self, ctx: commands.Context, search: str):
         await ctx.trigger_typing()
         result = urlparse(search)
+        if 'start_radio' in result.query:
+            await ctx.channel.send('You can\'t request YouTube Mixes. Sorry.', delete_after=15)
+            return
         if result.path == '/playlist' or 'list=' in result.query:
             link_params = parse_qs(search)
             start_pos = link_params.get('index', 0)
@@ -186,8 +190,9 @@ class MusicPlayer(object):
 
             # Default link params start with 'watch',
             # which makes yt-dlp think that its not a playlist for some reason
-            list_id = link_params.get('list')[0]
-            search = f'https://www.youtube.com/playlist?list={list_id}'
+            id_list = link_params.get('list') \
+                      or [val for key, val in link_params.items() if 'list' in key][0]  # Scuffed fix for youtu.be
+            search = f'https://www.youtube.com/playlist?list={id_list[0]}'
 
             await self.process_playlist(ctx, search, start_pos)
             if self.current_track is None:
