@@ -29,11 +29,11 @@ def setup(bot):
         for cog in COG_LIST:
             try:
                 bot.load_extension(f'{COG_FOLDER}.{cog}')
-                logging.info(f'{cog} cog has been loaded!')
+                logging.info(f'[ + ] {cog}')
             except commands.errors.ExtensionAlreadyLoaded:
-                logging.info(f'{cog} cog is already loaded!')
+                logging.info(f'[   ] {cog}')
             except commands.errors.ExtensionFailed as ex:
-                logging.warning(f'{cog} cog failed to load! \n{ex}')
+                logging.warning(f'[ X ] {cog}\n{ex}')
         for guild in bot.guilds:
             guild_to_settings[guild] = Settings(guild)
             guild_to_audioplayer[guild] = MusicPlayer(bot, guild)

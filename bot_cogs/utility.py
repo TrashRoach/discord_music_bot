@@ -7,9 +7,9 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='off', aliases=['logout', 'dc'])
+    @commands.command(name='logout')
     @commands.is_owner()
-    async def _off(self, ctx):
+    async def _logout(self, ctx: commands.Context):
         """Disconnect the bot.
 
         Owner only.
@@ -19,7 +19,7 @@ class Utility(commands.Cog):
         await self.bot.close()
 
     @commands.command(name='owner', aliases=['owners', 'ownership'])
-    async def _owner(self, ctx):
+    async def _owner(self, ctx: commands.Context):
         """Tag Bot's owner(s)."""
         owner_id = self.bot.owner_id or (await self.bot.application_info()).owner.id
         composed_msg = f'Creator: <@{owner_id}>\n'
@@ -31,7 +31,7 @@ class Utility(commands.Cog):
         await ctx.send(composed_msg)
 
     @commands.command(name='ping')
-    async def _ping(self, ctx):
+    async def _ping(self, ctx: commands.Context):
         """Pong."""
         await ctx.send('pong')
 

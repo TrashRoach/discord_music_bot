@@ -50,6 +50,14 @@ class Music(commands.Cog):
 
         await ctx.send(f'Connected to <#{channel.id}>', delete_after=10)
 
+    @commands.command(name='leave', aliases=['disconnect', 'dc', 'off'])
+    async def _leave(self, ctx: commands.Context):
+        if not ctx.voice_client:
+            return await ctx.send("I'm not not connected to any voice channel.", delete_after=20)
+        player = guild_to_audioplayer[ctx.guild]
+        await player.stop_player()
+        await ctx.voice_client.disconnect()
+
     @commands.command(name='play', aliases=['p'])
     async def _play(self, ctx: commands.Context, *, search: str):
         """Request a song and add it to the queue.
@@ -245,7 +253,7 @@ class Music(commands.Cog):
         Parameters
         -----------
         position: int [Required]
-            History page number to display.
+            Song index in the queue to remove.
         """
         player = guild_to_audioplayer[ctx.guild]
         playlist = player.playlist

@@ -12,3 +12,14 @@ class Timer:
 
     def cancel(self):
         self._task.cancel()
+
+
+def get_similarity_coefficient(s1, s2) -> float:
+    """
+    Tanimoto similarity index.
+    """
+    a, b, c = len(s1), len(s2), 0.0
+    for symbol in s1:
+        if symbol in s2:
+            c += 1
+    return c / (a + b - c)

@@ -1,5 +1,9 @@
+import traceback
+
 import discord
 from discord.ext import commands
+
+from core.helpers import correct_command_name
 
 
 class Errors(commands.Cog):
@@ -41,12 +45,20 @@ class Errors(commands.Cog):
                                      delete_after=error.retry_after)
         elif isinstance(error, commands.CommandNotFound):
             message = await ctx.send(*error.args, delete_after=10)
+            similar_command = await correct_command_name(self.bot, ctx, ctx.invoked_with)
+            if similar_command:
+                await ctx.send(f'Maybe you mean **`{similar_command}`** ?', delete_after=15)
         elif isinstance(error, commands.errors.BadArgument):
             pass
         else:
+            tb = traceback.format_exception(etype=type(error), value=error, tb=error.__traceback__)
+            traceback_fmt = ''.join(tb)
             owner_id = self.bot.owner_id or (await self.bot.application_info()).owner.id
-            message = await ctx.send(f'<@{owner_id}>\n'
-                                     f'```python\n'
+            await ctx.send(f'<@{owner_id}>\n'
+                           f'```python\n'
+                           f'{traceback_fmt}'
+                           f'```')
+            message = await ctx.send(f'```python\n'
                                      f'{" ".join(error.args)}\n\n'
                                      f'{ctx.message.clean_content = }\n'
                                      f'{ctx.message.content = }\n\n'
