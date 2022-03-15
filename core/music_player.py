@@ -6,7 +6,7 @@ import discord
 import yt_dlp
 from discord.ext import commands
 
-from config import MAX_SONG_DURATION, MAX_PRELOAD, MAX_PLAYLIST_LEN
+from config import MAX_SONG_DURATION, MAX_PRELOAD, MAX_PLAYLIST_LEN, CODE_BLOCK
 from core import utils
 from core.playlist import Playlist
 from core.track import Track
@@ -211,7 +211,7 @@ class MusicPlayer(object):
                     info = ytdl.extract_info(search, download=False)
                 except Exception as ex:
                     await self.channel.send(f'There was an error processing your request.\n'
-                                            f'```css\n{ex}\n```')
+                                            f'{CODE_BLOCK}css\n{ex}\n{CODE_BLOCK}')
                     return None
             except Exception as ex:
                 ytdl = yt_dlp.YoutubeDL({'title': True})

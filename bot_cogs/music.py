@@ -52,6 +52,7 @@ class Music(commands.Cog):
 
     @commands.command(name='leave', aliases=['disconnect', 'dc', 'off'])
     async def _leave(self, ctx: commands.Context):
+        """Disconnect from Voice Channel."""
         if not ctx.voice_client:
             return await ctx.send("I'm not not connected to any voice channel.", delete_after=20)
         player = guild_to_audioplayer[ctx.guild]

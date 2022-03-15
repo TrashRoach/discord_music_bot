@@ -1,11 +1,44 @@
+import inspect
+
 import discord
 from discord.ext import commands
+
+from config import CODE_BLOCK
+from core.helpers import correct_command_name
 
 
 class Utility(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name='source', aliases=['code'])
+    async def _source(self, ctx: commands.Context, *, cmd: str = None):
+        """Show source code for selected command."""
+        symbol_limit = 2000 - 12  # code block open + Python + code block close
+        if not cmd:
+            cmd = 'source'
+        cmd = cmd.lower()
+        command = self.bot.get_command(cmd)
+        if not command:
+            await ctx.send('Can\'t find that command. Sorry.', delete_after=10)
+            similar_command = await correct_command_name(self.bot, ctx, cmd)
+            if similar_command:
+                await ctx.send(f'Maybe you mean **`{similar_command}`** ?', delete_after=15)
+            return
+        source_code = inspect.getsource(command.callback)
+        # Output
+        while len(source_code) > symbol_limit:
+            # Split by symbol_limit
+            source_code_part = source_code[:symbol_limit]
+            # Get first closest split index
+            slice_index = source_code_part.rfind('\n')
+            # Slice by index
+            source_code_part = source_code_part[:slice_index]
+            # Leftovers
+            source_code = source_code[slice_index:]
+            await ctx.send(f'{CODE_BLOCK}python\n{source_code_part}{CODE_BLOCK}')
+        await ctx.send(f'{CODE_BLOCK}python\n{source_code}{CODE_BLOCK}')
 
     @commands.command(name='logout')
     @commands.is_owner()
