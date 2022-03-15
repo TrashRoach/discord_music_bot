@@ -3,6 +3,7 @@ import traceback
 import discord
 from discord.ext import commands
 
+from config import CODE_BLOCK
 from core.helpers import correct_command_name
 
 
@@ -55,10 +56,10 @@ class Errors(commands.Cog):
             traceback_fmt = ''.join(tb)
             owner_id = self.bot.owner_id or (await self.bot.application_info()).owner.id
             await ctx.send(f'<@{owner_id}>\n'
-                           f'```python\n'
+                           f'{CODE_BLOCK}python\n'
                            f'{traceback_fmt}'
-                           f'```')
-            message = await ctx.send(f'```python\n'
+                           f'{CODE_BLOCK}')
+            message = await ctx.send(f'{CODE_BLOCK}python\n'
                                      f'{" ".join(error.args)}\n\n'
                                      f'{ctx.message.clean_content = }\n'
                                      f'{ctx.message.content = }\n\n'
@@ -68,7 +69,7 @@ class Errors(commands.Cog):
                                      f'{ctx.invoked_parents = }\n'
                                      f'{ctx.invoked_subcommand = }\n'
                                      f'{ctx.subcommand_passed = }\n\n'
-                                     f'{ctx.kwargs = }```')
+                                     f'{ctx.kwargs = }{CODE_BLOCK}')
 
 
 def setup(bot):
