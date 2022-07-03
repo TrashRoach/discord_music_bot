@@ -55,21 +55,26 @@ class Errors(commands.Cog):
             tb = traceback.format_exception(etype=type(error), value=error, tb=error.__traceback__)
             traceback_fmt = ''.join(tb)
             owner_id = self.bot.owner_id or (await self.bot.application_info()).owner.id
-            await ctx.send(f'<@{owner_id}>\n'
-                           f'{CODE_BLOCK}python\n'
-                           f'{traceback_fmt}'
-                           f'{CODE_BLOCK}')
-            message = await ctx.send(f'{CODE_BLOCK}python\n'
-                                     f'{" ".join(error.args)}\n\n'
-                                     f'{ctx.message.clean_content = }\n'
-                                     f'{ctx.message.content = }\n\n'
-                                     f'{ctx.command.cog.qualified_name = }\n'
-                                     f'{ctx.command.name = }\n\n'
-                                     f'{ctx.invoked_with = }\n\n'
-                                     f'{ctx.invoked_parents = }\n'
-                                     f'{ctx.invoked_subcommand = }\n'
-                                     f'{ctx.subcommand_passed = }\n\n'
-                                     f'{ctx.kwargs = }{CODE_BLOCK}')
+            owner = self.bot.get_user(owner_id)
+            await owner.send(f'{ctx.guild.id = }\n'
+                             f'{ctx.guild.name = }\n\n'
+                             f'{CODE_BLOCK}python\n'
+                             f'{traceback_fmt}'
+                             f'{CODE_BLOCK}')
+            await owner.send(f'{CODE_BLOCK}python\n'
+                             f'{" ".join(error.args)}\n\n'
+                             f'{ctx.message.clean_content = }\n'
+                             f'{ctx.message.content = }\n\n'
+                             f'{ctx.command.cog.qualified_name = }\n'
+                             f'{ctx.command.name = }\n\n'
+                             f'{ctx.invoked_with = }\n\n'
+                             f'{ctx.invoked_parents = }\n'
+                             f'{ctx.invoked_subcommand = }\n'
+                             f'{ctx.subcommand_passed = }\n\n'
+                             f'{ctx.kwargs = }{CODE_BLOCK}')
+            message = await ctx.send('Oops, something went wrong...\n'
+                                     'Please do **not** try to fix it by repeating the same command!\n\n'
+                                     'Error traceback has been sent to the Developer.', delete_after=30)
 
 
 def setup(bot):

@@ -2,8 +2,19 @@ import json
 from pathlib import Path
 
 import discord
+from discord.ext.commands import Bot
+
+from core.music_player import MusicPlayer
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def settings_setup(bot: Bot, guild: discord.Guild, guild_to_settings: dict, guild_to_audioplayer: dict):
+    """
+    Add guild to settings and audio player
+    """
+    guild_to_settings[guild] = Settings(guild)
+    guild_to_audioplayer[guild] = MusicPlayer(bot, guild)
 
 
 class Settings:

@@ -134,7 +134,7 @@ class MusicPlayer(object):
             composed_msg += '\n**Excluded (song is private or too long)**\n'
             composed_msg += '\n'.join(f'`{track}`' for track in excluded)
 
-        if len(composed_msg) > 2000:
+        while len(composed_msg) > 2000:
             part_1 = composed_msg[:2000]
             slice_index = part_1.rfind('\n')
             part_1 = part_1[:slice_index]
