@@ -177,7 +177,7 @@ class MusicPlayer(object):
         return info['entries'][0]
 
     async def process_track(self, ctx: commands.Context, search: str):
-        await ctx.trigger_typing()
+        await ctx.typing()
         result = urlparse(search)
         if 'start_radio' in result.query:
             await ctx.channel.send('You can\'t request YouTube Mixes. Sorry.', delete_after=15)

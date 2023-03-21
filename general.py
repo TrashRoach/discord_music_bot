@@ -27,7 +27,7 @@ def setup(bot):
         await bot.change_presence(activity=discord.Game(name=f'{BOT_CMD_PREFIX}play'))
         for cog in COG_LIST:
             try:
-                bot.load_extension(f'{COG_FOLDER}.{cog}')
+                await bot.load_extension(f'{COG_FOLDER}.{cog}')
                 logging.info(f'[ + ] {cog}')
             except commands.errors.ExtensionAlreadyLoaded:
                 logging.info(f'[   ] {cog}')

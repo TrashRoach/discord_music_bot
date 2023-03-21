@@ -77,5 +77,5 @@ class Errors(commands.Cog):
                                      'Error traceback has been sent to the Developer.', delete_after=30)
 
 
-def setup(bot):
-    bot.add_cog(Errors(bot))
+async def setup(bot):
+    await bot.add_cog(Errors(bot))

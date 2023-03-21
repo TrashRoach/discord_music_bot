@@ -70,7 +70,7 @@ class Music(commands.Cog):
         search: str [Required]
             The song to search and retrieve using YTDL. This could be a simple search or URL.
         """
-        await ctx.trigger_typing()
+        await ctx.typing()
 
         if not ctx.voice_client:
             await ctx.invoke(self._join)
@@ -304,5 +304,5 @@ class Music(commands.Cog):
                 return
 
 
-def setup(bot):
-    bot.add_cog(Music(bot))
+async def setup(bot):
+    await bot.add_cog(Music(bot))

@@ -17,4 +17,4 @@ setup(bot)
 if __name__ == '__main__':
     load_dotenv()
     token = os.getenv('DISCORDBOT_TOKEN')
-    bot.run(token, bot=True, reconnect=True)
+    bot.run(token, reconnect=True)
