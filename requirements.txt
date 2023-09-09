@@ -19,4 +19,4 @@ typing-extensions==3.10.0.2
 websockets==10.1
 win32-setctime==1.1.0
 yarl==1.7.2
-yt-dlp==2023.2.17
+yt-dlp==2023.7.6
