@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "discord-music-bot"
-version = "0.5.0"
+version = "1.0.0"
 description = "A simple music bot for discord servers"
 authors = ["TrashRoach <rfsnboris@gmail.com>"]
 license = "MIT"

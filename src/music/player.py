@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import discord
 from discord.ext import commands
 
+from src.bot.view.player import MusicPlayerView
 from src.config import config
 from src.music.playlist import Playlist
 from src.music.track import Track
@@ -77,6 +78,10 @@ class Player:
             )
         return embed
 
+    @property
+    def view(self):
+        return MusicPlayerView(self)
+
     def handle_source(self, request: str, requested_by: discord.Member) -> None:
         parsed_request = urlparse(request)
         if not parsed_request.scheme or parsed_request.netloc in youtube.Source.TAGS:
@@ -133,7 +138,7 @@ class Player:
         )
 
         self.playlist.queue.popleft()
-        self.now_playing_message = await self.channel.send(embed=self.get_embed())
+        self.now_playing_message = await self.channel.send(embed=self.get_embed(), view=self.view)
 
         for track in list(self.playlist.queue)[1 : config.MAX_PRELOAD + 1]:
             asyncio.ensure_future(self.preload(track))
