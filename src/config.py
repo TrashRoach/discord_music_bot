@@ -12,6 +12,7 @@ class Config:
 
     MAX_SONG_DURATION = 1.5 * 60 * 60  # Maximum song duration to play in seconds
     MAX_PLAYLIST_LEN = 50  # Maximum songs in playlist request to enqueue
+    MAX_HISTORY_LENGTH = 15  # Maximum recently played songs to keep in history
     MAX_PRELOAD = 2  # Amount of songs to preload
 
     EMBED_QUEUE_PER_PAGE = 5  # Amount of enqueued songs to display in embed
