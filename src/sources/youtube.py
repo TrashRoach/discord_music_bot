@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
-from urllib.parse import parse_qs
+from typing import TYPE_CHECKING, List, Optional
+from urllib.parse import parse_qs, urlparse
 
+import discord
 import yt_dlp
 
 from src.config import config
+from src.music.track import Track
+
+if TYPE_CHECKING:
+    from src.music.playlist import Playlist
 
 
 @dataclass
@@ -137,3 +142,51 @@ class Info:
         self.uploader = data.get('uploader')
         self.title = data.get('title')
         self.duration = data.get('duration')
+
+
+class Source:
+    TAGS: tuple = ('www.youtube.com', 'youtu.be')
+    __slots__ = ('info',)
+
+    def __init__(self, data):
+        self.info = Info(data)
+
+    @classmethod
+    def track_from_data(cls, data: dict) -> Optional[Track]:
+        if not data.get('channel_id'):
+            # Private video
+            return None
+        if data.get('duration', 0) > config.MAX_SONG_DURATION:
+            # Too long
+            return None
+        return Track(url=data.get('url'), source=cls(data=data))
+
+    @classmethod
+    def handle(cls, request: str, playlist: Playlist, requested_by: discord.Member) -> None:
+        parsed_request = urlparse(request)
+        if 'start_radio' in parsed_request.query:
+            raise RadioNotAllowedError
+        if parsed_request.scheme:
+            if parsed_request.path == '/playlist' or 'list=' in parsed_request.query:
+                data_list = Handler.from_playlist(request)
+                for data in data_list:
+                    if track := cls.track_from_data(data):
+                        track.requested_by = requested_by
+                        playlist.add(track)
+                return
+            data = Handler.from_url(request)
+        else:
+            data = Handler.from_search(request)
+
+        if track := cls.track_from_data(data):
+            track.requested_by = requested_by
+            track.loaded = True
+            playlist.add(track)
+
+    def download(cls, track: 'Track') -> 'Track':
+        data = Handler.download(track.url)
+        loaded_track = cls.track_from_data(data)
+        track.url = loaded_track.url
+        track.source = loaded_track.source
+        track.loaded = True
+        return track
