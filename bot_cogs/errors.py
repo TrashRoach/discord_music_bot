@@ -52,7 +52,7 @@ class Errors(commands.Cog):
         elif isinstance(error, commands.errors.BadArgument):
             pass
         else:
-            tb = traceback.format_exception(etype=type(error), value=error, tb=error.__traceback__)
+            tb = traceback.format_exception(error, value=error, tb=error.__traceback__)
             traceback_fmt = ''.join(tb)
             owner_id = self.bot.owner_id or (await self.bot.application_info()).owner.id
             owner = self.bot.get_user(owner_id)
